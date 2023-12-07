@@ -18,6 +18,10 @@ services:
       SCRAPER_DB : ${SCRAPER_DB}
       SCRAPER_USER : ${SCRAPER_USER}
       SCRAPER_USER_PASSWORD : ${SCRAPER_USER_PASSWORD}
+      ADMIN_SUPER_USER: ${ADMIN_SUPER_USER}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      
     networks:
       - scraper
   # database
@@ -48,7 +52,7 @@ services:
 
     networks:
       - scraper
-      
+
 networks:
   scraper:
 

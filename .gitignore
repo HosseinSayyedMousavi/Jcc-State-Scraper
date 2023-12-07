@@ -154,3 +154,5 @@ test.py
 # django
 
 migrations/
+**migrations/
+scraper-data/
