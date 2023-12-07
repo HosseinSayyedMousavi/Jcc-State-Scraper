@@ -18,6 +18,13 @@ class OjccCase(models.Model):
     counsel_for_employer = models.CharField(max_length=255,null=True,blank=True,verbose_name="Counsel For Employer/Carrier")
     created_date = models.DateTimeField(auto_now_add = True)
     updated_date = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "OJCC Case"
+        verbose_name_plural = "OJCC Cases"
+
+    def __str__(self) :
+        return "OJCC Case Number"+self.ojcc_case_number
+
 
 class Schedule(models.Model):
     ojcc_case = models.ForeignKey(OjccCase,on_delete=models.CASCADE)
@@ -29,6 +36,9 @@ class Schedule(models.Model):
     _with = models.CharField(max_length=255,null=True,blank=True,verbose_name="With")
     created_date = models.DateTimeField(auto_now_add = True)
     updated_date = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "Schedule"
+        verbose_name_plural = "Schedule"
 
 class Docket(models.Model):
     ojcc_case = models.ForeignKey(OjccCase,on_delete=models.CASCADE)
@@ -36,4 +46,7 @@ class Docket(models.Model):
     proceedings = models.CharField(max_length=255,null=True,blank=True,verbose_name="Proceedings")
     created_date = models.DateTimeField(auto_now_add = True)
     updated_date = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "Docket"
+        verbose_name_plural = "Docket"
 
