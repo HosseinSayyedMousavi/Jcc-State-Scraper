@@ -10,6 +10,47 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - SECRET_KEY=test
-      - DEBUG=True
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG}
+      - CaseStatus=${CaseStatus}
+      - DateOpenStart=${DateOpenStart}
+      - DateOpenEnd=${DateOpenEnd}
+      - AccidentDate=${AccidentDate}
+      - fname=${fname}
+      - lname=${lname}
+      - County=${County}
+      - SSN=${SSN}
+      - employer=${employer}
+      - carrier=${carrier}
+      - JCC=${JCC}
 
+  # database
+  database:
+    image: postgres:14-alpine
+    container_name: ${DB_CONTAINER_NAME}
+    restart: unless-stopped
+    expose:
+      - "${DB_INNER_PORT}"
+    ports:
+      - "${DB_OUTER_PORT}:${DB_INNER_PORT}"
+    
+    networks:
+      - metacave
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "${SCRAPER_DB:-postgres}", "-U", "${SCRAPER_USER:-postgres}"]
+      timeout: 10s
+      interval: 10s
+      retries: 10
+
+    environment:
+      POSTGRES_DB: ${SCRAPER_DB}
+      POSTGRES_USER: ${SCRAPER_USER}
+      POSTGRES_PASSWORD: ${SCRAPER_USER_PASSWORD}
+
+    volumes:
+      - ./strategies-ps-data:/var/lib/postgresql/data # data persistence
+
+    command: -p ${DB_INNER_PORT}
+
+networks:
+    scraper:
