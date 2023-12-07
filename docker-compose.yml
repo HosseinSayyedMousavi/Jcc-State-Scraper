@@ -8,7 +8,7 @@ services:
     volumes:
       - ./core:/app
     ports:
-      - "8000:8000"
+      - "${SCRAPER_OUTER_PORT}:${SCRAPER_INNER_PORT}"
     environment:
       SECRET_KEY : ${SECRET_KEY}
       DEBUG : ${DEBUG}
