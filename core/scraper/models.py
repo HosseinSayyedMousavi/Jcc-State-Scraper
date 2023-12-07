@@ -40,6 +40,7 @@ class Schedule(models.Model):
         verbose_name = "Schedule"
         verbose_name_plural = "Schedule"
 
+
 class Docket(models.Model):
     ojcc_case = models.ForeignKey(OjccCase,on_delete=models.CASCADE)
     date = models.CharField(max_length=255,null=True,blank=True,verbose_name="Date")

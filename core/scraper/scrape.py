@@ -7,13 +7,17 @@ from lxml import html
 from .models import Docket , OjccCase , Schedule
 import re
 from tqdm import tqdm
+import os
+from django.conf import settings
 
-with open("scrape_config.json","r") as f:
+file_path = os.path.join(settings.BASE_DIR, 'scraper/scrape_config.json')
+with open(file_path,"r") as f:
     scrape_config = json.loads(f.read())
 
 
 def scrape_ojcc():
-    
+    print("------------SCRAPER HAS STARTED-----------")
+
     # First
     url = "https://www.jcc.state.fl.us/JCC/searchJCC/searchCases.asp"
 
@@ -77,16 +81,16 @@ def scrape_ojcc():
     root = html.fromstring(str(soup))
     last_href = root.xpath("//div[@align='center']/a[contains(text(),'Last')]/@href")[0]
     number_of_pages = int(re.findall(r"\d+",last_href)[0])
-
+    print("number of pages: "+str(number_of_pages))
     for page in tqdm(range(1,number_of_pages)) :
         scrape_page(target_url,page,headers)
 
 
 def scrape_page(target_url,page,headers):
+    print("current page: "+str(page))
     url = f"{target_url}?pc{page}"
     page_response = requests.request("GET", url, headers=headers)
     page_soup = BeautifulSoup(page_response.text,"html.parser")
-    root = html.fromstring(str(page_soup))
     page_soup.select("div.grid_5.alignleft a[href]")
     case_elements = page_soup.select("div.grid_5.alignleft a[href]")
     for case_element in case_elements:
@@ -114,43 +118,65 @@ def scrape_case(element_url,case_soup,case_element):
     for case_docket in case_dockets:
         # create Docket objects
         docket_data = {}
-        docket_data["date"] = case_docket.select_one("td[width='15%']").text
-        docket_data["proceeding"] = case_docket.select_one("td[width='75%']").text
-        docket_data["ojcc_case"] = ojcc_object
-        Docket.objects.get_or_create(**docket_data)
+        try:docket_data["date"] = case_docket.select_one("td[width='15%']").text
+        except:pass
+        try:docket_data["proceeding"] = case_docket.select_one("td[width='75%']").text
+        except:pass
+        try:docket_data["ojcc_case"] = ojcc_object
+        except:pass
+        try:Docket.objects.get_or_create(**docket_data)
+        except:pass
 
     case_schedules = case_soup.select("#schedule tr:has(td[align=center])")
     for case_schedule in case_schedules:
         # create Schedule objects
         schedule_attrs = case_schedule.select("td[align=center]")
         schedule_data = {}
-        schedule_data["hearing_type"] = schedule_attrs[0].text                        
-        schedule_data["event_date"] = schedule_attrs[1].text            
-        schedule_data["start_time"] = schedule_attrs[2].text            
-        schedule_data["current_status"] = schedule_attrs[3].text            
-        schedule_data["_with"] = schedule_attrs[4].text
+        try:schedule_data["hearing_type"] = schedule_attrs[0].text                        
+        except:pass
+        try:schedule_data["event_date"] = schedule_attrs[1].text            
+        except:pass
+        try:schedule_data["start_time"] = schedule_attrs[2].text            
+        except:pass
+        try:schedule_data["current_status"] = schedule_attrs[3].text            
+        except:pass
+        try:schedule_data["_with"] = schedule_attrs[4].text
+        except:pass
         Schedule.objects.get_or_create("schedule_data")
 
     # OjccCase attributes
-    ojcc_object.case_yr = re.findall(r"caseYr=(\d+)",element_url)[0]
-    ojcc_object.case_num = re.findall(r"caseNum=(\d+)",element_url)[0]
-    ojcc_object.ojcc_case_number = case_element.text.strip()
-    ojcc_object.judge = case_soup.select_one("div.grid_2:contains('udge') + div.grid_6.nomargin").text.strip()
-    ojcc_object.mediator = case_soup.select_one("div.grid_2:contains('ediator') + div.grid_6.nomargin").text.strip()
-    ojcc_object.carrier = case_soup.select_one("div.grid_2:contains('arrier') + div.grid_6.nomargin").text.strip()
-    ojcc_object.accident_date = case_soup.select_one("div.grid_2:contains('ccident') + div.grid_6.nomargin").text.strip()
-    ojcc_object.date_assigned = case_soup.select_one("div.grid_2:contains('ssigned') + div.grid_6.nomargin").text.strip()
-    ojcc_object.district = case_soup.select_one("div.grid_2:contains('istrict') + div.grid_6.nomargin").text.strip()
-    ojcc_object.county = case_soup.select_one("div.grid_2:contains('ounty') + div.grid_6.nomargin").text.strip()
+    try:ojcc_object.case_yr = re.findall(r"caseYr=(\d+)",element_url)[0]
+    except:pass
+    try:ojcc_object.case_num = re.findall(r"caseNum=(\d+)",element_url)[0]
+    except:pass
+    try:ojcc_object.ojcc_case_number = case_element.text.strip()
+    except:pass
+    try:ojcc_object.judge = case_soup.select_one("div.grid_2:contains('udge') + div.grid_6.nomargin").text.strip()
+    except:pass
+    try:ojcc_object.mediator = case_soup.select_one("div.grid_2:contains('ediator') + div.grid_6.nomargin").text.strip()
+    except:pass
+    try:ojcc_object.carrier = case_soup.select_one("div.grid_2:contains('arrier') + div.grid_6.nomargin").text.strip()
+    except:pass
+    try:ojcc_object.accident_date = case_soup.select_one("div.grid_2:contains('ccident') + div.grid_6.nomargin").text.strip()
+    except:pass
+    try:ojcc_object.date_assigned = case_soup.select_one("div.grid_2:contains('ssigned') + div.grid_6.nomargin").text.strip()
+    except:pass
+    try:ojcc_object.district = case_soup.select_one("div.grid_2:contains('istrict') + div.grid_6.nomargin").text.strip()
+    except:pass
+    try:ojcc_object.county = case_soup.select_one("div.grid_2:contains('ounty') + div.grid_6.nomargin").text.strip()
+    except:pass
     ojcc_object.counsel_for_claimant = ''
 
-    counsel_for_claimants = case_soup.select_one("#counsel table[align='center']:has(h4:contains('lainment'))").select('td')
+
+    try:counsel_for_claimants = case_soup.select_one("#counsel table[align='center']:has(h4:contains('lainment'))").select('td')
+    except:counsel_for_claimants =[]
     for claimant in counsel_for_claimants:
         ojcc_object.counsel_for_claimant += claimant.text.strip()
 
     ojcc_object.counsel_for_employer = ""
 
-    counsel_for_employers = case_soup.select_one("#counsel table[align='center']:has(h4:contains('mployer'))").select('td:not(:has(h4))')
+    try:counsel_for_employers = case_soup.select_one("#counsel table[align='center']:has(h4:contains('mployer'))").select('td:not(:has(h4))')
+    except:counsel_for_employers=[]
     for employer in counsel_for_employers:
         ojcc_object.counsel_for_employer += employer.text.strip()
     ojcc_object.case_status = scrape_config["CaseStatus"]

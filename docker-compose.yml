@@ -21,6 +21,7 @@ services:
       ADMIN_SUPER_USER: ${ADMIN_SUPER_USER}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SCHEDULER_INTERVAL : ${SCHEDULER_INTERVAL}
       
     networks:
       - scraper
