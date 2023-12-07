@@ -1,4 +1,10 @@
-django >4.2,<4.3
-requests
-bs4
+django==4.2.4
+requests==2.31.0
+beautifulsoup4==4.12.2
+python-decouple==3.8
+djangorestframework==3.14.0
+django-cors-headers==4.2.0
+psycopg2-binary==2.9.6
+pprintpp==0.4.0
+django-solo==2.0.0
 ipython

@@ -4,28 +4,24 @@ services:
   scraper:
     build: .
     container_name: scraper
-    command: python manage.py runserver 0.0.0.0:8000
+
     volumes:
-    - ./core:/app
+      - ./core:/app
     ports:
       - "8000:8000"
     environment:
-      - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=${DEBUG}
-      - CaseStatus=${CaseStatus}
-      - DateOpenStart=${DateOpenStart}
-      - DateOpenEnd=${DateOpenEnd}
-      - AccidentDate=${AccidentDate}
-      - fname=${fname}
-      - lname=${lname}
-      - County=${County}
-      - SSN=${SSN}
-      - employer=${employer}
-      - carrier=${carrier}
-      - JCC=${JCC}
-
+      SECRET_KEY : ${SECRET_KEY}
+      DEBUG : ${DEBUG}
+      DB_CONTAINER_NAME : ${DB_CONTAINER_NAME}
+      DB_OUTER_PORT : ${DB_OUTER_PORT}
+      DB_INNER_PORT : ${DB_INNER_PORT}
+      SCRAPER_DB : ${SCRAPER_DB}
+      SCRAPER_USER : ${SCRAPER_USER}
+      SCRAPER_USER_PASSWORD : ${SCRAPER_USER_PASSWORD}
+    networks:
+      - scraper
   # database
-  database:
+  scraper_db:
     image: postgres:14-alpine
     container_name: ${DB_CONTAINER_NAME}
     restart: unless-stopped
@@ -34,8 +30,6 @@ services:
     ports:
       - "${DB_OUTER_PORT}:${DB_INNER_PORT}"
     
-    networks:
-      - metacave
     healthcheck:
       test: ["CMD", "pg_isready", "-q", "-d", "${SCRAPER_DB:-postgres}", "-U", "${SCRAPER_USER:-postgres}"]
       timeout: 10s
@@ -48,9 +42,16 @@ services:
       POSTGRES_PASSWORD: ${SCRAPER_USER_PASSWORD}
 
     volumes:
-      - ./strategies-ps-data:/var/lib/postgresql/data # data persistence
+      - scraper-data:/var/lib/postgresql/data # data persistence
 
     command: -p ${DB_INNER_PORT}
 
+    networks:
+      - scraper
+      
 networks:
-    scraper:
+  scraper:
+
+volumes:
+  scraper-data:
+    driver: local
