@@ -1,0 +1,15 @@
+version: "4.16.3"
+
+services:
+  scraper:
+    build: .
+    container_name: scraper
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+    - ./core:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=test
+      - DEBUG=True
+
