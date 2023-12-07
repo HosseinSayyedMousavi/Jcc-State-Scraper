@@ -156,3 +156,4 @@ test.py
 migrations/
 **migrations/
 scraper-data/
+static/
