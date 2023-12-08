@@ -1,11 +1,11 @@
 # Jcc-State-Scraper
 scrape jcc state 
 
-### 1. quick start
+## 1. quick start
 
-#### A. At BASE_DR run this command
+#### A. Run this command at BASE_DR 
 ```
-    docker compose up --build -d
+docker compose up --build -d
 ```
 it create 2 containers named "scraper" and "scraper_db" (a postgres database)
 
@@ -27,7 +27,7 @@ if you click on save button scraper will be start.
 
 you can stream all scraped OjccCases with its Docket and Scheduler objects that connect to this with ForeignKey.
 
-### 2. Scraper characteristics :
+## 2. Scraper characteristics :
 
 
 #### A. This scraper just use BeautifulSoup as a protocol method
@@ -38,7 +38,7 @@ you can stream all scraped OjccCases with its Docket and Scheduler objects that 
 
 #### D. You can customize it by change scraper/scrape_config and .env file for another considerations
 
-### 3. steps of scrape data
+## 3. steps of scrape data
 
 for scrape data without browser we must to operate like this in protocol methods. 
 #### A. First request
