@@ -32,4 +32,3 @@ class OjccCaseAdmin(admin.ModelAdmin):
 @admin.register(StartScraper)
 class StartScraperAdmin(SingletonModelAdmin):
     readonly_fields = ["updated_at","created_at","current_page","status","Progress_bar"]
-    exclude = ["start_job"]

@@ -5,7 +5,7 @@ scrape jcc state
 
 #### A. At BASE_DR run this command
 ```
-    docker compose up --build -d
+docker compose up --build -d
 ```
 it create 2 containers named "scraper" and "scraper_db" (a postgres database)
 
@@ -20,12 +20,11 @@ login with following username and password:
 username=admin
 password=admin
 ```
+### C. Check scraping data
 
-#### C. Start scraper on Start scraper singletone model:
+- You can see all scraped Ojcc cases with its Docket and Scheduler objects that connect to this with ForeignKey.
 
-if you click on save button scraper will be start.
-
-you can stream all scraped OjccCases with its Docket and Scheduler objects that connect to this with ForeignKey.
+- You can stream operation in Stream scraper singleton model. (save button do nothing)
 
 ### 2. Scraper characteristics :
 

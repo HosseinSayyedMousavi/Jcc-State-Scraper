@@ -76,26 +76,24 @@ class Docket(models.Model):
 
 
 
-class StartScraper(SingletonModel):
+class StreamScraper(SingletonModel):
 
     updated_at = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now=True)
     current_page = models.IntegerField(default=1,null=True , blank = True)
     status = models.CharField(max_length=255,default="Press Save Button To Start Scraping")
     Progress_bar = models.TextField(null=True,blank=True)
-    start_job = models.BooleanField(default=True)
     def save(self, *args,**kwargs):
         if not self.pk:
-            super(StartScraper, self).save(*args,**kwargs)
-        elif self.start_job:
             threading.Thread(target=scrape_ojcc).start()
             self.status = "Scraper Is Now Running!"
             self.current_page = 1
-            self.start_job = False
-            super(StartScraper, self).save(*args,**kwargs)
+
+        super(StreamScraper, self).save(*args,**kwargs)
 
 
-try:scrape_starter,created = StartScraper.objects.get_or_create()
+
+try:scrape_starter,created = StreamScraper.objects.get_or_create()
 except:pass
 
 
@@ -172,7 +170,6 @@ def scrape_ojcc():
 
     for page in tqdm(range(1,number_of_pages)) :
         scrape_starter.current_page = page
-        scrape_starter.start_job = False
         Progress_bar.n = page
         scrape_starter.Progress_bar = Progress_bar.__str__()
         scrape_starter.save()
