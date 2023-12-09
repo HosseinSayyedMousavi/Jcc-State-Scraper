@@ -10,4 +10,6 @@ django-solo==2.1.0
 lxml==4.9.3
 APScheduler==3.9.1
 tqdm==4.66.1
+gunicorn==21.2.0
+pprintpp
 ipython

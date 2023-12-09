@@ -14,6 +14,8 @@ import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from decouple import config
 from solo.models import SingletonModel
+from pprintpp import pprint
+from copy import copy
 file_path = os.path.join(settings.BASE_DIR, 'scraper/scrape_config.json')
 
 with open(file_path,"r") as f:
@@ -22,6 +24,7 @@ with open(file_path,"r") as f:
 # Create your models here.
 
 class OjccCase(models.Model):
+    url = models.TextField(null=True,blank=True,verbose_name="url")
     case_id = models.TextField(null=True,blank=True,verbose_name="CaseID")
     case_yr = models.TextField(null=True,blank=True,verbose_name="caseYr")
     case_num = models.TextField(null=True,blank=True,verbose_name="caseNum")
@@ -75,33 +78,29 @@ class Docket(models.Model):
         return ""
 
 
-
 class StreamScraper(SingletonModel):
 
     updated_at = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now=True)
     current_page = models.IntegerField(default=1,null=True , blank = True)
-    status = models.CharField(max_length=255,default="Press Save Button To Start Scraping")
+    status = models.CharField(max_length=255,default="Scraper Is Now Running!")
     Progress_bar = models.TextField(null=True,blank=True)
+    stopped = models.BooleanField(default = True)
     def save(self, *args,**kwargs):
-        if not self.pk:
-            threading.Thread(target=scrape_ojcc).start()
-            self.status = "Scraper Is Now Running!"
-            self.current_page = 1
+
+        # if self.stopped :
+        #     print('StreamScraper object created')
+        #     threading.Thread(target = test_print).start()
+        #     self.stopped = False
 
         super(StreamScraper, self).save(*args,**kwargs)
-
-
-
-try:scrape_starter,created = StreamScraper.objects.get_or_create()
-except:pass
 
 
 def scrape_ojcc():
     print("------------SCRAPER HAS STARTED-----------")
     global scrape_config
-    global scrape_starter
-    
+    # global scrape_starter
+    scrape_starter,created = StreamScraper.objects.get_or_create()
     # First
     url = "https://www.jcc.state.fl.us/JCC/searchJCC/searchCases.asp"
 
@@ -169,6 +168,7 @@ def scrape_ojcc():
     Progress_bar = tqdm(total = number_of_pages)
 
     for page in tqdm(range(1,number_of_pages)) :
+        print("page: "+str(page))
         scrape_starter.current_page = page
         Progress_bar.n = page
         scrape_starter.Progress_bar = Progress_bar.__str__()
@@ -178,14 +178,21 @@ def scrape_ojcc():
 
 def scrape_page(target_url,page,headers):
     print("current page: "+str(page))
-    url = f"{target_url}?pc{page}"
+    url = f"{target_url}?pc={page}"
     page_response = requests.request("GET", url, headers=headers)
+    
     page_soup = BeautifulSoup(page_response.text,"html.parser")
     page_soup.select("div.grid_5.alignleft a[href]")
     case_elements = page_soup.select("div.grid_5.alignleft a[href]")
+    headers2=copy(headers)
+
     for case_element in case_elements:
         element_url = urljoin(page_response.url, case_element.get("href"))
-        case_response = requests.request("GET", element_url, headers=headers)
+        case_response = requests.request("GET", element_url, headers=headers2)
+
+        try:headers2["cookie"] = case_response.headers['Set-Cookie']
+        except:pass
+
         case_soup = BeautifulSoup(case_response.text,"html.parser")
         case_dockets = case_soup.select("#docket tr.odd,tr.even")
         continue_case = True
@@ -201,9 +208,12 @@ def scrape_page(target_url,page,headers):
 
 def scrape_case(element_url,case_soup,case_element):
     case_dockets = case_soup.select("#docket tr.odd,tr.even")
-    ojcc_data = {}
-    ojcc_data["case_id"] = re.findall(r"CaseID=(\d+)",element_url)[0]
-    ojcc_object,o = OjccCase.objects.get_or_create(**ojcc_data)
+    try:ojcc_case_number = case_element.text.strip()
+    except:ojcc_case_number=False
+
+    if ojcc_case_number: ojcc_object , created = OjccCase.objects.get_or_create(ojcc_case_number=ojcc_case_number)
+    else: return
+    print(ojcc_case_number)
     # create OjccCase objects
     for case_docket in case_dockets:
         # create Docket objects
@@ -212,9 +222,8 @@ def scrape_case(element_url,case_soup,case_element):
         except:pass
         try:docket_data["proceeding"] = case_docket.select_one("td[width='75%']").text
         except:pass
-        try:docket_data["ojcc_case"] = ojcc_object
-        except:pass
-        try:Docket.objects.get_or_create(**docket_data)
+        try: 
+            if docket_data : Docket.objects.get_or_create(ojcc_case=ojcc_object,**docket_data)
         except:pass
 
     case_schedules = case_soup.select("#schedule tr:has(td[align=center])")
@@ -232,16 +241,19 @@ def scrape_case(element_url,case_soup,case_element):
         except:pass
         try:schedule_data["_with"] = schedule_attrs[4].text
         except:pass
-        try:schedule_data["ojcc_case"] = ojcc_object
-        except:pass
-        if schedule_data : Schedule.objects.get_or_create(**schedule_data)
-
+        try:
+            if schedule_data: Schedule.objects.get_or_create(ojcc_case=ojcc_object , **schedule_data)
+        except: pass
     # OjccCase attributes
+
+
+    try:ojcc_object.url=element_url
+    except:pass
+    try:ojcc_object.case_id = re.findall(r"CaseID=(\d+)",element_url)[0]
+    except:pass
     try:ojcc_object.case_yr = re.findall(r"caseYr=(\d+)",element_url)[0]
     except:pass
     try:ojcc_object.case_num = re.findall(r"caseNum=(\d+)",element_url)[0]
-    except:pass
-    try:ojcc_object.ojcc_case_number = case_element.text.strip()
     except:pass
     try:ojcc_object.judge = case_soup.select_one("div.grid_2:contains('udge') + div.grid_6.nomargin").text.strip()
     except:pass
@@ -257,20 +269,34 @@ def scrape_case(element_url,case_soup,case_element):
     except:pass
     try:ojcc_object.county = case_soup.select_one("div.grid_2:contains('ounty') + div.grid_6.nomargin").text.strip()
     except:pass
-    ojcc_object.counsel_for_claimant = ''
+    counsel_for_claimant = ''
 
 
-    try:counsel_for_claimants = case_soup.select_one("#counsel table[align='center']:has(h4:contains('lainment'))").select('td')
+    try:counsel_for_claimants = case_soup.select_one("#counsel table[align='center']:has(h4:contains('laimant'))").select('td')
     except:counsel_for_claimants =[]
     for claimant in counsel_for_claimants:
-        ojcc_object.counsel_for_claimant += claimant.text.strip()
+        counsel_for_claimant += claimant.text.strip()
+    ojcc_object.counsel_for_claimant = counsel_for_claimant
 
-    ojcc_object.counsel_for_employer = ""
+    counsel_for_employer = ""
 
     try:counsel_for_employers = case_soup.select_one("#counsel table[align='center']:has(h4:contains('mployer'))").select('td:not(:has(h4))')
     except:counsel_for_employers=[]
     for employer in counsel_for_employers:
-        ojcc_object.counsel_for_employer += employer.text.strip()
+        counsel_for_employer += employer.text.strip()
+    ojcc_object.counsel_for_employer = counsel_for_employer
     ojcc_object.case_status = scrape_config["CaseStatus"]
+    # pprint(ojcc_object.__dict__)
     ojcc_object.save()
 
+
+def test_print():
+    i=0
+    while True:
+        time.sleep(1)
+        print(i)
+        i+=1
+# threading.Thread(target = test_print).start()
+
+# try:scrape_starter,created = StreamScraper.objects.get_or_create()
+# except:pass
